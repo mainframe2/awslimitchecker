@@ -39,6 +39,17 @@ Jason Antman <jason@jasonantman.com> <http://www.jasonantman.com>
 
 from awslimitchecker.limit import AwsLimit
 import logging
+import sys
+
+# https://code.google.com/p/mock/issues/detail?id=249
+# py>=3.4 should use unittest.mock not the mock package on pypi
+if (
+        sys.version_info[0] < 3 or
+        sys.version_info[0] == 3 and sys.version_info[1] < 4
+):
+    from mock import Mock
+else:
+    from unittest.mock import Mock
 
 
 class LogRecordHelper(object):
@@ -252,3 +263,24 @@ def sample_limits_api():
     limits['SvcFoo']['foo limit3']._set_ta_limit(10)
     limits['SvcFoo']['zzz limit4']._set_api_limit(34)
     return limits
+
+
+class RetryTests(object):
+
+    """
+    {'cookies': <RequestsCookieJar[]>, '_content': '<?xml version="1.0" encoding="UTF-8"?>\n<DescribeVpcsResponse xmlns="http://ec2.amazonaws.com/doc/2015-10-01/">\n    <requestId>5b9f8b96-4e09-4651-a578-0dbca7d79946</requestId>\n    <vpcSet>\n        <item>\n            <vpcId>vpc-47807c22</vpcId>\n            <state>available</state>\n            <cidrBlock>172.31.0.0/16</cidrBlock>\n            <dhcpOptionsId>dopt-3c4e535e</dhcpOptionsId>\n            <instanceTenancy>default</instanceTenancy>\n            <isDefault>true</isDefault>\n        </item>\n    </vpcSet>\n</DescribeVpcsResponse>', 'headers': {'transfer-encoding': 'chunked', 'vary': 'Accept-Encoding', 'server': 'AmazonEC2', 'content-type': 'text/xml;charset=UTF-8', 'date': 'Sat, 21 May 2016 02:22:53 GMT'}, 'url': u'https://ec2.us-west-2.amazonaws.com/', 'status_code': 200, '_content_consumed': True, 'encoding': 'UTF-8', 'request': <PreparedRequest [POST]>, 'connection': <botocore.vendored.requests.adapters.HTTPAdapter object at 0x7efe8c8bac50>, 'elapsed': datetime.timedelta(0, 0, 684463), 'raw': <botocore.vendored.requests.packages.urllib3.response.HTTPResponse object at 0x7efe8c862d50>, 'reason': 'OK', 'history': []}
+    """
+    describe_vpcs_1 = Mock()
+    type(describe_vpcs_1).content = '<?xml version="1.0" encoding="UTF-8"?>\n<DescribeVpcsResponse xmlns="http://ec2.amazonaws.com/doc/2015-10-01/">\n    <requestId>5b9f8b96-4e09-4651-a578-0dbca7d79946</requestId>\n    <vpcSet>\n        <item>\n            <vpcId>vpc-47807c22</vpcId>\n            <state>available</state>\n            <cidrBlock>172.31.0.0/16</cidrBlock>\n            <dhcpOptionsId>dopt-3c4e535e</dhcpOptionsId>\n            <instanceTenancy>default</instanceTenancy>\n            <isDefault>true</isDefault>\n        </item>\n    </vpcSet>\n</DescribeVpcsResponse>'
+    type(describe_vpcs_1).headers = {'transfer-encoding': 'chunked', 'vary': 'Accept-Encoding', 'server': 'AmazonEC2', 'content-type': 'text/xml;charset=UTF-8', 'date': 'Sat, 21 May 2016 02:22:53 GMT'}
+    type(describe_vpcs_1).status_code = 200
+
+    describe_vpcs_rate_limit = Mock()
+    type(describe_vpcs_rate_limit).content = '<?xml version="1.0" encoding="UTF-8"?>\n<Response><Errors><Error><Code>RequestLimitExceeded</Code><Message>Request limit exceeded.</Message></Error></Errors><RequestID>44c0f570-e338-48dd-9953-6684fa586dcb</RequestID></Response>'
+    type(describe_vpcs_rate_limit).headers = {'transfer-encoding': 'chunked', 'date': 'Sat, 21 May 2016 11:08:53 GMT', 'server': 'AmazonEC2'}
+    type(describe_vpcs_rate_limit).status_code = 400
+
+    describe_vpcs_throttling = Mock()
+    type(describe_vpcs_throttling).content = '<?xml version="1.0" encoding="UTF-8"?>\n<Response><Errors><Error><Type>Sender</Type><Code>Throttling</Code><Message>Rate exceeded</Message></Error></Errors><RequestID>44c0f570-e338-48dd-9953-6684fa586dcb</RequestID></Response>'
+    type(describe_vpcs_throttling).headers = {'transfer-encoding': 'chunked', 'date': 'Sat, 21 May 2016 11:08:53 GMT', 'server': 'AmazonEC2'}
+    type(describe_vpcs_throttling).status_code = 400
