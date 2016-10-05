@@ -70,6 +70,34 @@ class StoreKeyValuePair(argparse.Action):
         getattr(namespace, self.dest)[n] = v
 
 
+class ReadFileLimits(argparse.Action):
+    """
+    Store key=value options in a dict as {'key': 'value'}.
+
+    Supports specifying the option multiple times, but NOT with ``nargs``.
+
+    See :py:class:`~argparse.Action`.
+    """
+
+    def __init__(self, option_strings, dest, nargs=None, const=None,
+                 default=None, type=None, choices=None, required=False,
+                 help=None, metavar=None):
+        super(StoreKeyValuePair, self).__init__(option_strings, dest, nargs,
+                                                const, default, type, choices,
+                                                required, help, metavar)
+        self.default = {}
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        with open(values, "r") as f:
+            for line in f:
+                if '=' not in line:
+                    raise argparse.ArgumentError(self, 'must be in the form key=value')
+                n, v = line.split('=')
+                # handle quotes for values with spaces
+                n = n.strip('"\'')
+                getattr(namespace, self.dest)[n] = v
+
+
 def dict2cols(d, spaces=2, separator=' '):
     """
     Take a dict of string keys and string values, and return a string with

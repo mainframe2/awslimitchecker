@@ -116,6 +116,10 @@ class Runner(object):
                        help='override a single AWS limit, specified in '
                        '"service_name/limit_name=value" format; can be '
                        'specified multiple times.')
+        p.add_argument('-F', '--limits-file', action=ReadFileLimits,
+                       help='override many AWS limits from a file, each line '
+                       'should be formated like the following '
+                       '"service_name/limit_name=value" format;')
         p.add_argument('-u', '--show-usage', action='store_true',
                        default=False,
                        help='find and print the current usage of all AWS '
@@ -325,6 +329,9 @@ class Runner(object):
                 v=self.checker.get_version()
             ))
             raise SystemExit(0)
+
+        if len(args.limits_file) > 0:
+            self.set_limit_overrides(args.limits_file)
 
         if len(args.limit) > 0:
             self.set_limit_overrides(args.limit)
