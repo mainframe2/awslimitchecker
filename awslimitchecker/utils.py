@@ -82,16 +82,19 @@ class ReadFileLimits(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, const=None,
                  default=None, type=None, choices=None, required=False,
                  help=None, metavar=None):
-        super(StoreKeyValuePair, self).__init__(option_strings, dest, nargs,
-                                                const, default, type, choices,
-                                                required, help, metavar)
+        super(ReadFileLimits, self).__init__(option_strings, dest, nargs,
+                                             const, default, type, choices,
+                                             required, help, metavar)
         self.default = {}
 
     def __call__(self, parser, namespace, values, option_string=None):
         with open(values, "r") as f:
             for line in f:
                 if '=' not in line:
-                    raise argparse.ArgumentError(self, 'must be in the form key=value')
+                    raise argparse.ArgumentError(
+                        self,
+                        'lines must be in the form key=value'
+                    )
                 n, v = line.split('=')
                 # handle quotes for values with spaces
                 n = n.strip('"\'')
